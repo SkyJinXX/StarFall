@@ -7,7 +7,7 @@
             canvas {
                 display: block;
                 margin: auto;
-                background-color: #1d1565;
+                background-color: #0f001a;
             }
         </style>
         <title>星星坠落</title>
@@ -186,7 +186,7 @@
                 ctx.fillStyle = "red";
                 ctx.textAlign = "center";
                 ctx.fillText(
-                    "游戏结束！",
+                    "Game Over！",
                     canvas.width / 2,
                     canvas.height / 2 - 60
                 );
@@ -194,7 +194,7 @@
                 ctx.font = "32px Arial";
                 ctx.fillStyle = "white";
                 ctx.fillText(
-                    "本局分数: " + Math.floor(score) + "m",
+                    "本次坠落了: " + Math.floor(score) + "m",
                     canvas.width / 2,
                     canvas.height / 2
                 );
@@ -205,7 +205,7 @@
                 );
                 localStorage.setItem("highScore", highScore);
                 ctx.fillText(
-                    "最高分: " + Math.floor(highScore) + "m",
+                    "最多坠落: " + Math.floor(highScore) + "m",
                     canvas.width / 2,
                     canvas.height / 2 + 40
                 );
