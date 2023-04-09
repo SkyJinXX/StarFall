@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <style>
+            canvas {
+                display: block;
+                margin: auto;
+                background-color: #1d1565;
+            }
+        </style>
+        <title>星星坠落</title>
+    </head>
+    <body>
+        <canvas id="gameCanvas" width="375" height="1000"></canvas>
+        <script>
+            const canvas = document.getElementById("gameCanvas");
+            const ctx = canvas.getContext("2d");
+            const startButton = {
+                buttonWidth: 200,
+                buttonHeight: 50,
+            };
+            startButton.buttonX = (canvas.width - startButton.buttonWidth) / 2;
+            startButton.buttonY =
+                (canvas.height - startButton.buttonHeight) / 2;
+            const restartButton = {
+                buttonWidth: 200,
+                buttonHeight: 50,
+            };
+            restartButton.buttonX = (canvas.width - restartButton.buttonWidth) / 2;
+            restartButton.buttonY =
+                (canvas.height - restartButton.buttonHeight) / 2 + 100;
+
+            let score = 0;
+            let gameOver = false;
+            let gameStarted = false;
+            let gameStartTime = null;
+            const STAR = {
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                width: 30,
+                height: 30,
+                speed: 3,
+            };
+
+            let obstacles = [];
+
+            function createObstacle() {
+                const width = 20 + Math.random() * 40;
+                const height = 20 + Math.random() * 40;
+                const x = Math.random() * (canvas.width - width);
+                const y = canvas.height;
+
+                return { x, y, width, height };
+            }
+
+            function drawStarShape(x, y, radius) {
+                const spikes = 5;
+                const step = (Math.PI * 2) / spikes;
+                const innerRadius = radius * 0.38;
+                let rotation = -Math.PI / 2;
+
+                ctx.beginPath();
+                ctx.moveTo(
+                    x + Math.cos(rotation) * radius,
+                    y + Math.sin(rotation) * radius
+                );
+
+                for (let i = 0; i < spikes; i++) {
+                    rotation += step / 2;
+                    ctx.lineTo(
+                        x + Math.cos(rotation) * innerRadius,
+                        y + Math.sin(rotation) * innerRadius
+                    );
+                    rotation += step / 2;
+                    ctx.lineTo(
+                        x + Math.cos(rotation) * radius,
+                        y + Math.sin(rotation) * radius
+                    );
+                }
+
+                ctx.closePath();
+                ctx.fillStyle = "yellow";
+                ctx.fill();
+            }
+            function drawStar() {
+                drawStarShape(
+                    STAR.x + STAR.width / 2,
+                    STAR.y + STAR.height / 2,
+                    STAR.width / 2
+                );
+            }
+
+            function updateStarPosition() {
+                for (const obstacle of obstacles) {
+                    obstacle.y -= STAR.speed;
+                }
+            }
+
+            function drawPixelArtRock(obstacle) {
+                ctx.fillStyle = "#837b8a";
+                ctx.fillRect(
+                    obstacle.x,
+                    obstacle.y,
+                    obstacle.width,
+                    obstacle.height
+                );
+            }
+
+            function drawObstacles() {
+                for (const obstacle of obstacles) {
+                    drawPixelArtRock(obstacle);
+                }
+            }
+
+            function updateObstacles() {
+                if (
+                    obstacles.length === 0 ||
+                    obstacles[obstacles.length - 1].y < canvas.height - 100
+                ) {
+                    obstacles.push(createObstacle());
+                }
+
+                if (obstacles.length > 30) {
+                    obstacles.shift();
+                }
+            }
+
+            function drawRestartButton() {
+                const { buttonWidth, buttonHeight, buttonX, buttonY } =
+                    restartButton;
+
+                ctx.fillStyle = "#4CAF50";
+                ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
+
+                ctx.font = "24px Arial";
+                ctx.fillStyle = "white";
+                ctx.textAlign = "center";
+                ctx.fillText(
+                    "重新开始",
+                    buttonX + buttonWidth / 2,
+                    buttonY + buttonHeight / 2
+                );
+            }
+            function drawTitle() {
+                ctx.font = "48px Arial";
+                ctx.fillStyle = "white";
+                ctx.textAlign = "center";
+                ctx.fillText(
+                    "星星坠落",
+                    canvas.width / 2,
+                    canvas.height / 2 - 80
+                ); // 添加这个函数，绘制标题
+            }
+
+            function drawStartButton() {
+                const { buttonWidth, buttonHeight, buttonX, buttonY } =
+                    startButton;
+
+                ctx.fillStyle = "#4CAF50";
+                ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
+
+                ctx.font = "24px Arial";
+                ctx.fillStyle = "white";
+                ctx.textAlign = "center";
+                ctx.fillText(
+                    "开始游戏",
+                    canvas.width / 2,
+                    buttonY + buttonHeight / 2 + 8
+                );
+            }
+
+            function showMainMenu() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawTitle();
+                drawStartButton();
+            }
+            function showGameOverScreen() {
+                gameStarted = false;
+
+                ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.font = "48px Arial";
+                ctx.fillStyle = "red";
+                ctx.textAlign = "center";
+                ctx.fillText(
+                    "游戏结束！",
+                    canvas.width / 2,
+                    canvas.height / 2 - 60
+                );
+
+                ctx.font = "32px Arial";
+                ctx.fillStyle = "white";
+                ctx.fillText(
+                    "本局分数: " + Math.floor(score) + "m",
+                    canvas.width / 2,
+                    canvas.height / 2
+                );
+
+                const highScore = Math.max(
+                    score,
+                    localStorage.getItem("highScore") || 0
+                );
+                localStorage.setItem("highScore", highScore);
+                ctx.fillText(
+                    "最高分: " + Math.floor(highScore) + "m",
+                    canvas.width / 2,
+                    canvas.height / 2 + 40
+                );
+                drawRestartButton();
+            }
+
+            function isColliding(rect1, rect2) {
+                return (
+                    rect1.x < rect2.x + rect2.width &&
+                    rect1.x + rect1.width > rect2.x &&
+                    rect1.y < rect2.y + rect2.height &&
+                    rect1.y + rect1.height > rect2.y
+                );
+            }
+
+            function drawScore() {
+                ctx.font = "24px Arial";
+                ctx.fillStyle = "white";
+                ctx.textAlign = "center";
+                ctx.fillText(
+                    "距离: " + Math.floor(score) + "m",
+                    canvas.width / 2,
+                    30
+                );
+            }
+
+            function handleMouseMove(event) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+
+                STAR.x = (event.clientX - rect.left) * scaleX - STAR.width / 2;
+            }
+            function handleTouchMove(event) {
+                event.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+
+                STAR.x =
+                    (event.touches[0].clientX - rect.left) * scaleX -
+                    STAR.width / 2;
+            }
+
+            function updateSpeed() {
+                if (gameStartTime !== null) {
+                    const elapsedTime = (Date.now() - gameStartTime) / 1000;
+                    STAR.speed = 3 + elapsedTime / 10;
+                }
+            }
+
+            function gameLoop() {
+                if (!gameStarted) {
+                    return;
+                }
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                updateStarPosition();
+                drawStar();
+
+                updateObstacles();
+                drawObstacles();
+
+                score += STAR.speed / 10;
+                updateSpeed();
+                drawScore();
+
+                for (const obstacle of obstacles) {
+                    gameOver = isColliding(STAR, obstacle);
+                    if (gameOver) {
+                        showGameOverScreen();
+                        console.log("Collision detected!");
+                        return;
+                    }
+                }
+
+                requestAnimationFrame(gameLoop);
+            }
+
+            function startGame() {
+                gameStarted = true;
+                gameStartTime = Date.now();
+
+                STAR.x = canvas.width / 2 - STAR.width / 2;
+                STAR.y = canvas.height / 2 - STAR.height / 2;
+
+                score = 0;
+                STAR.speed = 3;
+                obstacles = [];
+
+                drawStar();
+                gameLoop();
+            }
+
+            canvas.addEventListener("mousemove", handleMouseMove);
+            canvas.addEventListener("touchmove", handleTouchMove);
+            canvas.addEventListener("click", (event) => {
+                //startButton
+                const { buttonWidth, buttonHeight, buttonX, buttonY } =
+                    startButton;
+
+                const mouseX =
+                    event.clientX - canvas.getBoundingClientRect().left;
+                const mouseY =
+                    event.clientY - canvas.getBoundingClientRect().top;
+
+                // 检查点击是否在开始游戏按钮上
+                if (
+                    !gameStarted &&
+                    mouseX >= buttonX &&
+                    mouseX <= buttonX + buttonWidth &&
+                    mouseY >= buttonY &&
+                    mouseY <= buttonY + buttonHeight
+                ) {
+                    startGame();
+                }
+            });
+            canvas.addEventListener("click", (event) => {
+                //restartButton
+                const { buttonWidth, buttonHeight, buttonX, buttonY } =
+                    restartButton;
+
+                const mouseX =
+                    event.clientX - canvas.getBoundingClientRect().left;
+                const mouseY =
+                    event.clientY - canvas.getBoundingClientRect().top;
+
+                // 检查点击是否在重新开始按钮上
+                if (
+                    gameOver &&
+                    mouseX >= buttonX &&
+                    mouseX <= buttonX + buttonWidth &&
+                    mouseY >= buttonY &&
+                    mouseY <= buttonY + buttonHeight
+                ) {
+                    startGame();
+                }
+            });
+
+            showMainMenu();
+        </script>
+    </body>
+</html>
