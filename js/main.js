@@ -1,5 +1,88 @@
 const ctx = canvas.getContext("2d");
+class Obstacle {
+    constructor(x, y, width, height, image, rotation) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.image = image;
+        this.rotation = rotation;
+        this.radius = Math.min(width, height) / 2;
+    }
 
+    draw() {
+        ctx.save();
+        ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+        ctx.rotate(this.rotation);
+        ctx.drawImage(
+            this.image,
+            -this.width / 2,
+            -this.height / 2,
+            this.width,
+            this.height
+        );
+        ctx.restore();
+    }
+}
+class Star {
+    constructor(x, y, width, height, speed) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.speed = speed;
+        this.direction = 0;
+        this.lastMovedTime = Date.now();
+        this.lastStarX = this.x;
+        this.image = new Image();
+        this.image.src = "images/star.png";
+        this.radius = Math.min(width, height) / 2;
+    }
+    draw() {
+        // 1. draw star
+        ctx.drawImage(
+            this.image,
+            this.x,
+            this.y,
+            this.width,
+            this.height
+        );
+
+        // 2. change tail direction depend on lastMovedTime and move direction
+        const tailWidth = 3;
+        const tailLength = this.height * 2;
+        let tailXOffset = 0;
+
+        if (Date.now() - this.lastMovedTime < 100) {
+            if (this.direction === 1) {
+                tailXOffset = -10;
+            } else if (this.direction === -1) {
+                tailXOffset = 10;
+            }
+        }
+
+        // 3. draw spark tail
+        ctx.globalCompositeOperation = "source-over";
+        const tailPositions = [
+            { x: this.x + this.width / 2 - tailWidth / 2 - 8, y: this.y + 2 },
+            { x: this.x + this.width / 2 - tailWidth / 2, y: this.y - 5 },
+            { x: this.x + this.width / 2 - tailWidth / 2 + 8, y: this.y + 2 },
+        ];
+
+        for (const position of tailPositions) {
+            for (let i = 0; i < tailLength; i += tailWidth * 2) {
+                // const tailY = position.y - i - this.animationCycle * 2;
+                const tailY = position.y - i;
+                const tailX = position.x + tailXOffset * (i / tailLength);
+
+                const colorValue = 255 - Math.floor((i / tailLength) * 255);
+                ctx.fillStyle = `rgb(${colorValue}, ${colorValue}, 0)`;
+
+                ctx.fillRect(tailX, tailY, tailWidth, tailWidth);
+            }
+        }
+    }
+}
 export default class Main {
     constructor() {
         this.canvas = canvas;
@@ -24,30 +107,20 @@ export default class Main {
 
         this.animationCycle = 0;
         this.score = 0;
-        this.gameStatus = 0; // 0未进行游戏， 1进行中， 2死亡
+        this.gameStatus = 0; // 0:haven't started， 1: gaming， 2: dead
         this.gameStarted = false;
         this.gameStartTime = null;
-        this.STAR = {
-            x: canvas.width / 2,
-            y: canvas.height / 2,
-            width: 30,
-            height: 30,
-            speed: 3,
-            lastMovedTime: Date.now(),
-        };
-        this.lastStarX = this.STAR.x;
+        this.STAR = new Star(canvas.width / 2, canvas.height / 2, 30, 30, 3);
         this.images = {
-            meteor24x32: new Image(),
-            meteor32x48: new Image(),
-            meteor35x32: new Image(),
-            meteor50x48: new Image(),
-            star:new Image()
+            meteor36x74: new Image(),
+            meteor56x104: new Image(),
+            meteor70x64: new Image(),
+            meteor100x96: new Image(),
         };
-        this.images.star.src = "images/star.png";
-        this.images.meteor24x32.src = "images/24-32.png";
-        this.images.meteor32x48.src = "images/32-48.png";
-        this.images.meteor35x32.src = "images/35-32.png";
-        this.images.meteor50x48.src = "images/50-48.png";
+        this.images.meteor36x74.src = "images/36x74.png";
+        this.images.meteor56x104.src = "images/56x104.png";
+        this.images.meteor70x64.src = "images/70x64.png";
+        this.images.meteor100x96.src = "images/100x96.png";
 
         this.obstacles = [];
 
@@ -66,70 +139,44 @@ export default class Main {
     }
 
     createObstacle() {
-        const width = 20 + Math.random() * 40;
-        const height = 20 + Math.random() * 40;
+        const meteorImages = [
+            // { image: this.images.meteor36x74, width: 36, height: 74 },
+            // { image: this.images.meteor56x104, width: 56, height: 104 },
+            { image: this.images.meteor100x96, width: 50, height: 74 },
+            { image: this.images.meteor100x96, width: 76, height: 104 },
+            { image: this.images.meteor70x64, width: 70, height: 64 },
+            { image: this.images.meteor100x96, width: 100, height: 96 },
+        ];
+        const selectedMeteor =
+            meteorImages[Math.floor(Math.random() * meteorImages.length)];
+
+        const sizeMultiplier = 0.8 + Math.random() * 0.2; // random size
+        const width = selectedMeteor.width * sizeMultiplier;
+        const height = selectedMeteor.height * sizeMultiplier;
+
         const x = Math.random() * (canvas.width - width);
         const y = canvas.height;
 
-        return { x, y, width, height };
+        const rotation = Math.random() * 2 * Math.PI; // random angle:0 to 2π
+
+        return new Obstacle(
+            x,
+            y,
+            width,
+            height,
+            selectedMeteor.image,
+            rotation
+        );
     }
 
-    drawStar() {
-        // 1. 绘制星星图片
-        this.ctx.drawImage(
-            this.images.star,
-            this.STAR.x,
-            this.STAR.y,
-            this.STAR.width,
-            this.STAR.height
-        );
-    
-        // 2. 根据星星的移动方向和停止时间调整尾巴的倾斜
-        const tailWidth = 3;
-        const tailLength = this.STAR.height * 2;
-        let tailXOffset = 0;
-    
-        if (Date.now() - this.STAR.lastMovedTime < 100) {
-            if (this.STAR.direction === 1) {
-                tailXOffset = -10;
-            } else if (this.STAR.direction === -1) {
-                tailXOffset = 10;
-            }
-        }
-    
-        // 3. 绘制火花尾巴
-        this.ctx.globalCompositeOperation = "source-over";
-        const tailPositions = [
-            { x: this.STAR.x + this.STAR.width / 2 - tailWidth / 2 - 8, y: this.STAR.y +2 },
-            { x: this.STAR.x + this.STAR.width / 2 - tailWidth / 2, y: this.STAR.y - 5},
-            { x: this.STAR.x + this.STAR.width / 2 - tailWidth / 2 + 8, y: this.STAR.y +2},
-        ];
-    
-        for (const position of tailPositions) {
-            for (let i = 0; i < tailLength; i += tailWidth * 2) {
-                const tailY = position.y - i - this.animationCycle * 2;
-                const tailX = position.x + tailXOffset * (i / tailLength);
-    
-                const colorValue = 255 - Math.floor((i / tailLength) * 255);
-                this.ctx.fillStyle = `rgb(${colorValue}, ${colorValue}, 0)`;
-    
-                this.ctx.fillRect(tailX, tailY, tailWidth, tailWidth);
-            }
-        }
-    }
-    
     updateStarPosition() {
         for (const obstacle of this.obstacles) {
             obstacle.y -= this.STAR.speed;
         }
     }
-    drawPixelArtRock(obstacle) {
-        ctx.fillStyle = "#837b8a";
-        ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-    }
     drawObstacles() {
         for (const obstacle of this.obstacles) {
-            this.drawPixelArtRock(obstacle);
+            obstacle.draw(ctx);
         }
     }
     updateObstacles() {
@@ -229,13 +276,14 @@ export default class Main {
         this.drawRestartButton();
     }
 
-    isColliding(rect1, rect2) {
-        return (
-            rect1.x < rect2.x + rect2.width &&
-            rect1.x + rect1.width > rect2.x &&
-            rect1.y < rect2.y + rect2.height &&
-            rect1.y + rect1.height > rect2.y
-        );
+    isColliding(circle1, circle2) {
+        const dx =
+            circle1.x + circle1.width / 2 - (circle2.x + circle2.width / 2);
+        const dy =
+            circle1.y + circle1.height / 2 - (circle2.y + circle2.height / 2);
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        return distance < circle1.radius + circle2.radius;
     }
 
     handleMouseMove(event) {
@@ -247,7 +295,7 @@ export default class Main {
         this.STAR.direction =
             this.STAR.x < newStarX ? 1 : this.STAR.x > newStarX ? -1 : 0;
         this.STAR.x = newStarX;
-        this.lastStarX = this.STAR.x;
+        this.STAR.lastStarX = this.STAR.x;
         this.STAR.lastMovedTime = Date.now();
     }
     handleTouchMove(event) {
@@ -261,7 +309,7 @@ export default class Main {
         this.STAR.direction =
             this.STAR.x < newStarX ? 1 : this.STAR.x > newStarX ? -1 : 0;
         this.STAR.x = newStarX;
-        this.lastStarX = this.STAR.x;
+        this.STAR.lastStarX = this.STAR.x;
         this.STAR.lastMovedTime = Date.now();
     }
     handleTouchStart(event) {
@@ -310,7 +358,7 @@ export default class Main {
         // this.animationCycle = (this.animationCycle + 1) % 2;
 
         this.updateStarPosition();
-        this.drawStar();
+        this.STAR.draw();
 
         this.updateObstacles();
         this.drawObstacles();
@@ -346,7 +394,7 @@ export default class Main {
         this.STAR.speed = 3;
         this.obstacles = [];
 
-        this.drawStar();
+        this.STAR.draw();
         this.gameLoop();
     }
 }
