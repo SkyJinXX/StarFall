@@ -125,9 +125,6 @@ export default class Main {
         this.obstacles = [];
 
         // Event Listener
-        canvas.addEventListener("mousemove", (event) =>
-            this.handleMouseMove(event)
-        );
         canvas.addEventListener("touchmove", (event) =>
             this.handleTouchMove(event)
         );
@@ -286,18 +283,6 @@ export default class Main {
         return distance < circle1.radius + circle2.radius;
     }
 
-    handleMouseMove(event) {
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-
-        const newStarX =
-            (event.clientX - rect.left) * scaleX - this.STAR.width / 2;
-        this.STAR.direction =
-            this.STAR.x < newStarX ? 1 : this.STAR.x > newStarX ? -1 : 0;
-        this.STAR.x = newStarX;
-        this.STAR.lastStarX = this.STAR.x;
-        this.STAR.lastMovedTime = Date.now();
-    }
     handleTouchMove(event) {
         event.preventDefault();
         const rect = canvas.getBoundingClientRect();
