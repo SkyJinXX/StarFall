@@ -1,4 +1,5 @@
 const ctx = canvas.getContext("2d");
+const REWARD_SCORE = 100;
 class Obstacle {
     constructor(x, y, width, height, image, rotation) {
         this.x = x;
@@ -32,33 +33,26 @@ class Star {
         this.height = height;
         this.speed = speed;
         this.direction = 0;
-        this.lastMovedTime = Date.now();
-        this.lastStarX = this.x;
+        this.lastDirectionChangeTime = Date.now();
+        this.lastXforDirextion = this.x;
+        this.xWhenTouchStart = this.x;
         this.image = new Image();
         this.image.src = "images/star.png";
         this.radius = Math.min(width, height) / 2;
     }
     draw() {
         // 1. draw star
-        ctx.drawImage(
-            this.image,
-            this.x,
-            this.y,
-            this.width,
-            this.height
-        );
+        ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
 
-        // 2. change tail direction depend on lastMovedTime and move direction
+        // 2. change tail direction depend on lastDirectionChangeTime and move direction
         const tailWidth = 3;
         const tailLength = this.height * 2;
         let tailXOffset = 0;
 
-        if (Date.now() - this.lastMovedTime < 100) {
-            if (this.direction === 1) {
-                tailXOffset = -10;
-            } else if (this.direction === -1) {
-                tailXOffset = 10;
-            }
+        if (this.direction === 1) {
+            tailXOffset = -10;
+        } else if (this.direction === -1) {
+            tailXOffset = 10;
         }
 
         // 3. draw spark tail
@@ -124,12 +118,17 @@ export default class Main {
 
         this.obstacles = [];
 
+        this.initialTouchX = null;
+
         // Event Listener
         canvas.addEventListener("touchmove", (event) =>
             this.handleTouchMove(event)
         );
         canvas.addEventListener("touchstart", (event) =>
             this.handleTouchStart(event)
+        );
+        canvas.addEventListener("touchend", (event) =>
+            this.handleTouchEnd(event)
         );
 
         this.showMainMenu();
@@ -166,7 +165,12 @@ export default class Main {
         );
     }
 
-    updateStarPosition() {
+    updateStar() {
+        // 更新Star方向
+        if (Date.now() - this.STAR.lastDirectionChangeTime > 200) {
+            this.STAR.direction = 0;
+        }
+        // 更新障碍物位置
         for (const obstacle of this.obstacles) {
             obstacle.y -= this.STAR.speed;
         }
@@ -179,7 +183,7 @@ export default class Main {
     updateObstacles() {
         if (
             this.obstacles.length === 0 ||
-            this.obstacles[this.obstacles.length - 1].y < canvas.height - 150
+            this.obstacles[this.obstacles.length - 1].y < canvas.height - 200
         ) {
             this.obstacles.push(this.createObstacle());
         }
@@ -201,7 +205,7 @@ export default class Main {
         ctx.fillText(
             "重新开始",
             buttonX + buttonWidth / 2,
-            buttonY + buttonHeight / 2
+            buttonY + buttonHeight / 2 + 6
         );
     }
     drawTitle() {
@@ -244,32 +248,77 @@ export default class Main {
         this.drawStartButton();
     }
     showGameOverScreen() {
+        const preHighScore = parseInt(localStorage.getItem("highScore")) || 0;
+        const highScore = Math.max(
+            this.score,
+            preHighScore
+        );
+        const rewardHasShown =
+            parseInt(localStorage.getItem("rewardHasShown")) || 0; //类型可能不对
+        localStorage.setItem("highScore", highScore);
         ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.font = "48px Arial";
         ctx.fillStyle = "red";
         ctx.textAlign = "center";
-        ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2 - 60);
+        if (1) {
+            // if (!rewardHasShown && preHighScore < REWARD_SCORE && this.score >= REWARD_SCORE) {
+            localStorage.setItem("rewardHasShown", 1);
+            ctx.fillText("中奖了！", canvas.width / 2, canvas.height / 2 - 60);
+            ctx.font = "12px Arial";
+            ctx.fillText(
+                "凭本页截图可兑换5张甜甜券",
+                canvas.width / 2,
+                canvas.height / 2 - 30
+            );
+        } else {
+            ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2 - 60);
+        }
 
         ctx.font = "32px Arial";
         ctx.fillStyle = "white";
+        ctx.fillText("本次坠落: ", canvas.width / 2 - 50, canvas.height / 2);
+
+        ctx.fillStyle = "yellow";
         ctx.fillText(
-            "本次坠落了: " + Math.floor(this.score) + "m",
-            canvas.width / 2,
+            Math.floor(this.score) + "m",
+            canvas.width / 2 + 50,
             canvas.height / 2
         );
 
-        const highScore = Math.max(
-            this.score,
-            localStorage.getItem("highScore") || 0
-        );
-        localStorage.setItem("highScore", highScore);
+        ctx.font = "24px Arial";
+        ctx.fillStyle = "white";
         ctx.fillText(
-            "最多坠落: " + Math.floor(highScore) + "m",
-            canvas.width / 2,
+            "最多坠落: ",
+            canvas.width / 2 - 50,
             canvas.height / 2 + 40
         );
+
+        ctx.fillStyle = "yellow";
+        ctx.fillText(
+            Math.floor(highScore) + "m",
+            canvas.width / 2 + 50,
+            canvas.height / 2 + 40
+        );
+        // ctx.font = "32px Arial";
+        // ctx.fillStyle = "white";
+        // ctx.fillText(
+        //     "本次坠落了: " + Math.floor(this.score) + "m",
+        //     canvas.width / 2,
+        //     canvas.height / 2
+        // );
+
+        // const highScore = Math.max(
+        //     this.score,
+        //     localStorage.getItem("highScore") || 0
+        // );
+        // localStorage.setItem("highScore", highScore);
+        // ctx.fillText(
+        //     "最多坠落: " + Math.floor(highScore) + "m",
+        //     canvas.width / 2,
+        //     canvas.height / 2 + 40
+        // );
         this.drawRestartButton();
     }
 
@@ -287,17 +336,28 @@ export default class Main {
         event.preventDefault();
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width;
+        const moveThreshold = 6;
+        const touchMoveX =
+            (event.touches[0].clientX - this.initialTouchX) * scaleX;
+        // const newStarX = this.STAR.xWhenTouchStart + touchMoveX;
 
-        const newStarX =
-            (event.touches[0].clientX - rect.left) * scaleX -
-            this.STAR.width / 2;
-        this.STAR.direction =
-            this.STAR.x < newStarX ? 1 : this.STAR.x > newStarX ? -1 : 0;
-        this.STAR.x = newStarX;
-        this.STAR.lastStarX = this.STAR.x;
-        this.STAR.lastMovedTime = Date.now();
+        this.STAR.x = this.STAR.xWhenTouchStart + touchMoveX;
+        // 判断移动方向
+        const deltaX = this.STAR.x - this.STAR.lastXforDirextion; // deltaX是上一次重新计算方向时的x和现在的x的差
+
+        if (Math.abs(deltaX) > moveThreshold) {
+            this.STAR.direction = deltaX > 0 ? 1 : deltaX < 0 ? -1 : 0;
+            this.STAR.lastXforDirextion = this.STAR.x;
+            this.STAR.lastDirectionChangeTime = Date.now();
+        }
+
+        // 防止星星移出屏幕
+        this.STAR.x = Math.min(
+            Math.max(this.STAR.x, 0),
+            canvas.width - this.STAR.width
+        );
     }
-    handleTouchStart(event) {
+    handleTouchEnd(event) {
         let btn;
         switch (this.gameStatus) {
             case 0:
@@ -312,9 +372,11 @@ export default class Main {
         const { buttonWidth, buttonHeight, buttonX, buttonY } = btn;
 
         const mouseX =
-            event.touches[0].clientX - canvas.getBoundingClientRect().left;
+            event.changedTouches[0].clientX -
+            canvas.getBoundingClientRect().left;
         const mouseY =
-            event.touches[0].clientY - canvas.getBoundingClientRect().top;
+            event.changedTouches[0].clientY -
+            canvas.getBoundingClientRect().top;
 
         // 检查点击是否在开始游戏按钮上
         if (
@@ -326,11 +388,33 @@ export default class Main {
             this.startGame();
         }
     }
+    handleTouchStart(event) {
+        switch (this.gameStatus) {
+            case 0:
+                break;
+            case 2:
+                break;
+            default:
+                this.initialTouchX = event.touches[0].clientX;
+                this.STAR.xWhenTouchStart = this.STAR.x;
+                return;
+        }
+    }
 
     updateSpeed() {
         if (this.gameStartTime !== null) {
-            const elapsedTime = (Date.now() - this.gameStartTime) / 1000;
-            this.STAR.speed = 3 + elapsedTime / 10;
+            const score = Math.floor(this.score);
+            if (score < 500) {
+                this.STAR.speed = 3;
+            } else if (score < 750) {
+                this.STAR.speed = 4;
+            } else if (score < 1000) {
+                this.STAR.speed = 5;
+            } else if (score < 2500) {
+                this.STAR.speed = 6;
+            } else {
+                this.STAR.speed = 7; // 最大速度
+            }
         }
     }
 
@@ -342,7 +426,7 @@ export default class Main {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         // this.animationCycle = (this.animationCycle + 1) % 2;
 
-        this.updateStarPosition();
+        this.updateStar();
         this.STAR.draw();
 
         this.updateObstacles();
