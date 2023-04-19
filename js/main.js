@@ -204,22 +204,22 @@ export default class Main {
     }
     updateSpeed() {
         const preSpeed = this.STAR.speed;
-        if (this.gameStatus == 1) {
-            const score = Math.floor(this.score);
-            if (score < 300) {
-                this.STAR.speed = 4;
-            } else if (score < 500) {
-                this.STAR.speed = 5;
-            } else if (score < 1000) {
-                this.STAR.speed = 7;
-            } else if (score < 1500) {
-                this.STAR.speed = 8;
-            } else if (score < 2000) {
-                this.STAR.speed = 10;
-            } else {
-                this.STAR.speed = 10; // 最大速度
-            }
+        const score = Math.floor(this.score);
+
+        if (score < 300) {
+            this.STAR.speed = 4;
+        } else if (score < 500) {
+            this.STAR.speed = 5;
+        } else if (score < 1000) {
+            this.STAR.speed = 7;
+        } else if (score < 1500) {
+            this.STAR.speed = 8;
+        } else if (score < 2000) {
+            this.STAR.speed = 10;
+        } else {
+            this.STAR.speed = 10; // 最大速度
         }
+
         if (preSpeed != this.STAR.speed) {
             this.music.setBGMplayBackRate(1 + (this.STAR.speed - 4) / 8);
         }
@@ -326,7 +326,7 @@ export default class Main {
     }
     showRewardScreen() {
         const elapsedTime = Date.now() - this.startTime;
-        console.log(Date.now(), this.startTime)
+        console.log(Date.now(), this.startTime);
         const highScore = parseInt(localStorage.getItem("highScore")) || 0;
         ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -344,7 +344,7 @@ export default class Main {
         // if (elapsedTime  == 105) {
         //     this.music.playBGM("happyBirthday");
         // }
-        if (elapsedTime  >= 3000) {
+        if (elapsedTime >= 3000) {
             // 3000ms
             ctx.font = "12px Arial";
             ctx.fillStyle = "yellow";
@@ -535,16 +535,16 @@ export default class Main {
                             parseInt(localStorage.getItem("rewardHasShown")) ||
                             0; //类型可能不对
 
-                        this.startTime  = Date.now(); // 只重置这个，不能调用resetParameters，会把分数也清零
+                        this.startTime = Date.now(); // 只重置这个，不能调用resetParameters，会把分数也清零
                         localStorage.setItem("highScore", highScore);
                         this.touchEnabled = false; // 防止触发touchend事件，直接手都没抬起来就点了按钮
 
                         // if (1) {
-                            if (
-                                !rewardHasShown &&
-                                preHighScore < REWARD_SCORE &&
-                                this.score >= REWARD_SCORE
-                            ) {
+                        if (
+                            !rewardHasShown &&
+                            preHighScore < REWARD_SCORE &&
+                            this.score >= REWARD_SCORE
+                        ) {
                             this.music.playRewardSound();
                             vibrateWithInterval(4, 225, true);
                             this.gameStatus = 3;

@@ -9,6 +9,7 @@ export default class Music {
         //     this.bgmList.bgmName = new Audio(BGMLIST[bgmName])
         //     this.bgmList.bgmName.loop = true;
         // }
+
         // this.bgmList.redRiverValley = new Audio("audio/redRiverValley.mp3");
         this.bgmList.redRiverValley = wx.createInnerAudioContext();
         this.bgmList.redRiverValley.src = "audio/redRiverValley.mp3"
@@ -17,9 +18,15 @@ export default class Music {
         this.bgmList.pinkMemory = wx.createInnerAudioContext();
         this.bgmList.pinkMemory.src = "audio/pinkMemory.mp3"
         this.bgmList.pinkMemory.loop = true;
+
         this.bgmList.happyBirthday = wx.createInnerAudioContext();
         this.bgmList.happyBirthday.src = "audio/happyBirthday.mp3"
         this.bgmList.happyBirthday.loop = true;
+
+        // 预加载音频，避免加速播放时，加载的还不够多，导致需要重新播放（就多那么一两秒就有效？真的是因为这个导致的重新播放吗？）
+        this.preloadAudio(this.bgmList.redRiverValley);
+        this.preloadAudio(this.bgmList.pinkMemory);
+        this.preloadAudio(this.bgmList.happyBirthday);
 
         this.currentBGM = null;
     }
@@ -44,8 +51,24 @@ export default class Music {
         
     }
     setBGMplayBackRate (playBackRate) {
+        console.log(playBackRate)
         this.currentBGM.playbackRate = playBackRate;
         this.currentBGM.pause();
         this.currentBGM.play();
     }
+
+    preloadAudio(audio) {
+        audio.volume = 0; 
+        audio.onCanplay(() => {
+          audio.offCanplay(); 
+          audio.play();
+          audio.onPlay(() => {
+            audio.offPlay();
+            audio.pause();
+            audio.currentTime = 0;
+            audio.volume = 1; 
+          });
+        });
+        audio.play(); // 开始加载音频
+      }
 }
