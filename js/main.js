@@ -1,5 +1,6 @@
+import Music from "./music";
 const ctx = canvas.getContext("2d");
-const REWARD_SCORE = 100;
+const REWARD_SCORE = 1500;
 class Obstacle {
     constructor(x, y, width, height, image, rotation) {
         this.x = x;
@@ -78,10 +79,38 @@ class Star {
     }
 }
 export default class Main {
+    resetParameters() {
+        this.animationCycle = 0;
+        this.score = 0;
+        this.gameStatus = 0; // 0:haven't started， 1: gaming， 2: dead, 3: reward
+        this.gameStartTime = null;
+        this.initialTouchX = null;
+        this.STAR = new Star(canvas.width / 2, canvas.height / 2, 30, 30, 4);
+        this.obstacles = [];
+        this.touchEnabled = true;
+    }
     constructor() {
         this.canvas = canvas;
         this.ctx = ctx;
 
+        this.resetParameters();
+
+        // Obstacle's images
+        this.images = {
+            meteor36x74: new Image(),
+            meteor56x104: new Image(),
+            meteor70x64: new Image(),
+            meteor100x96: new Image(),
+        };
+        this.images.meteor36x74.src = "images/36x74.png";
+        this.images.meteor56x104.src = "images/56x104.png";
+        this.images.meteor70x64.src = "images/70x64.png";
+        this.images.meteor100x96.src = "images/100x96.png";
+
+        // Music
+        this.music = new Music();
+
+        // Buttons
         this.startButton = {
             buttonWidth: 200,
             buttonHeight: 50,
@@ -98,27 +127,6 @@ export default class Main {
             (canvas.width - this.restartButton.buttonWidth) / 2;
         this.restartButton.buttonY =
             (canvas.height - this.restartButton.buttonHeight) / 2 + 100;
-
-        this.animationCycle = 0;
-        this.score = 0;
-        this.gameStatus = 0; // 0:haven't started， 1: gaming， 2: dead
-        this.gameStarted = false;
-        this.gameStartTime = null;
-        this.STAR = new Star(canvas.width / 2, canvas.height / 2, 30, 30, 3);
-        this.images = {
-            meteor36x74: new Image(),
-            meteor56x104: new Image(),
-            meteor70x64: new Image(),
-            meteor100x96: new Image(),
-        };
-        this.images.meteor36x74.src = "images/36x74.png";
-        this.images.meteor56x104.src = "images/56x104.png";
-        this.images.meteor70x64.src = "images/70x64.png";
-        this.images.meteor100x96.src = "images/100x96.png";
-
-        this.obstacles = [];
-
-        this.initialTouchX = null;
 
         // Event Listener
         canvas.addEventListener("touchmove", (event) =>
@@ -170,7 +178,7 @@ export default class Main {
         if (Date.now() - this.STAR.lastDirectionChangeTime > 200) {
             this.STAR.direction = 0;
         }
-        // 更新障碍物位置
+        // 更新Star位置(其实是更新Obstacle位置)
         for (const obstacle of this.obstacles) {
             obstacle.y -= this.STAR.speed;
         }
@@ -183,7 +191,8 @@ export default class Main {
     updateObstacles() {
         if (
             this.obstacles.length === 0 ||
-            this.obstacles[this.obstacles.length - 1].y < canvas.height - 200
+            this.obstacles[this.obstacles.length - 1].y <
+                canvas.height - (Math.floor(Math.random() * 51) + 175)
         ) {
             this.obstacles.push(this.createObstacle());
         }
@@ -243,82 +252,87 @@ export default class Main {
     }
 
     showMainMenu() {
+        // 先放音乐
+        this.music.playBGM("redRiverValley");
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         this.drawTitle();
         this.drawStartButton();
     }
-    showGameOverScreen() {
-        const preHighScore = parseInt(localStorage.getItem("highScore")) || 0;
-        const highScore = Math.max(
-            this.score,
-            preHighScore
-        );
-        const rewardHasShown =
-            parseInt(localStorage.getItem("rewardHasShown")) || 0; //类型可能不对
-        localStorage.setItem("highScore", highScore);
+    showRewardScreen() {
+        const highScore = parseInt(localStorage.getItem("highScore")) || 0;
         ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        ctx.font = "48px Arial";
+        localStorage.setItem("rewardHasShown", 1);
+
+        
+        setTimeout(() => {
+            ctx.font = "64px Arial";
+            ctx.fillStyle = "pink";
+            ctx.textAlign = "center";
+            ctx.fillText("生日快乐", canvas.width / 2, canvas.height / 2 - 40);
+            
+        }, 1500);
+        this.music.playBGM("happyBirthday", 1750);
+        setTimeout(() => {
+            ctx.font = "12px Arial";
+            ctx.fillStyle = "yellow";
+            ctx.fillText(
+                "（凭本页截图可兑换5张甜甜券）",
+                canvas.width / 2,
+                canvas.height / 2 + 150
+            );
+        }, 3000);
+
+        ctx.font = "28px Arial";
+        ctx.textAlign = "center";
+        ctx.fillStyle = "white";
+        ctx.fillText(
+            "本次坠落: " + Math.floor(this.score) + "m",
+            canvas.width / 2,
+            canvas.height / 2 + 10
+        );
+
+        ctx.font = "20px Arial";
+        ctx.fillStyle = "white";
+        ctx.fillText(
+            "最多坠落: " + Math.floor(highScore) + "m",
+            canvas.width / 2,
+            canvas.height / 2 + 50
+        );
+
+        this.drawRestartButton();
+    }
+    showGameOverScreen() {
+        const highScore = parseInt(localStorage.getItem("highScore")) || 0;
+        ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        this.music.playBGM("redRiverValley", 1000);
+
+        ctx.font = "64px Arial";
         ctx.fillStyle = "red";
         ctx.textAlign = "center";
-        if (1) {
-            // if (!rewardHasShown && preHighScore < REWARD_SCORE && this.score >= REWARD_SCORE) {
-            localStorage.setItem("rewardHasShown", 1);
-            ctx.fillText("中奖了！", canvas.width / 2, canvas.height / 2 - 60);
-            ctx.font = "12px Arial";
-            ctx.fillText(
-                "凭本页截图可兑换5张甜甜券",
-                canvas.width / 2,
-                canvas.height / 2 - 30
-            );
-        } else {
-            ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2 - 60);
-        }
+        ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2 - 40);
 
-        ctx.font = "32px Arial";
-        ctx.fillStyle = "white";
-        ctx.fillText("本次坠落: ", canvas.width / 2 - 50, canvas.height / 2);
-
-        ctx.fillStyle = "yellow";
-        ctx.fillText(
-            Math.floor(this.score) + "m",
-            canvas.width / 2 + 50,
-            canvas.height / 2
-        );
-
-        ctx.font = "24px Arial";
+        ctx.font = "28px Arial";
+        ctx.textAlign = "center";
         ctx.fillStyle = "white";
         ctx.fillText(
-            "最多坠落: ",
-            canvas.width / 2 - 50,
-            canvas.height / 2 + 40
+            "本次坠落: " + Math.floor(this.score) + "m",
+            canvas.width / 2,
+            canvas.height / 2 + 10
         );
 
-        ctx.fillStyle = "yellow";
+        ctx.font = "20px Arial";
+        ctx.fillStyle = "white";
         ctx.fillText(
-            Math.floor(highScore) + "m",
-            canvas.width / 2 + 50,
-            canvas.height / 2 + 40
+            "最多坠落: " + Math.floor(highScore) + "m",
+            canvas.width / 2,
+            canvas.height / 2 + 50
         );
-        // ctx.font = "32px Arial";
-        // ctx.fillStyle = "white";
-        // ctx.fillText(
-        //     "本次坠落了: " + Math.floor(this.score) + "m",
-        //     canvas.width / 2,
-        //     canvas.height / 2
-        // );
 
-        // const highScore = Math.max(
-        //     this.score,
-        //     localStorage.getItem("highScore") || 0
-        // );
-        // localStorage.setItem("highScore", highScore);
-        // ctx.fillText(
-        //     "最多坠落: " + Math.floor(highScore) + "m",
-        //     canvas.width / 2,
-        //     canvas.height / 2 + 40
-        // );
         this.drawRestartButton();
     }
 
@@ -333,6 +347,8 @@ export default class Main {
     }
 
     handleTouchMove(event) {
+        if (!this.touchEnabled) return;
+
         event.preventDefault();
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width;
@@ -358,12 +374,15 @@ export default class Main {
         );
     }
     handleTouchEnd(event) {
+        if (!this.touchEnabled) return;
+
         let btn;
         switch (this.gameStatus) {
             case 0:
                 btn = this.startButton;
                 break;
             case 2:
+            case 3:
                 btn = this.restartButton;
                 break;
             default:
@@ -389,32 +408,37 @@ export default class Main {
         }
     }
     handleTouchStart(event) {
+        this.touchEnabled = true;
         switch (this.gameStatus) {
-            case 0:
-                break;
-            case 2:
-                break;
-            default:
+            case 1:
                 this.initialTouchX = event.touches[0].clientX;
                 this.STAR.xWhenTouchStart = this.STAR.x;
+                break;
+            default:
                 return;
         }
     }
 
     updateSpeed() {
+        const preSpeed = this.STAR.speed;
         if (this.gameStartTime !== null) {
             const score = Math.floor(this.score);
-            if (score < 500) {
-                this.STAR.speed = 3;
-            } else if (score < 750) {
+            if (score < 300) {
                 this.STAR.speed = 4;
-            } else if (score < 1000) {
+            } else if (score < 500) {
                 this.STAR.speed = 5;
-            } else if (score < 2500) {
-                this.STAR.speed = 6;
+            } else if (score < 1000) {
+                this.STAR.speed = 7;
+            } else if (score < 1500) {
+                this.STAR.speed = 8;
+            } else if (score < 2000) {
+                this.STAR.speed = 10;
             } else {
-                this.STAR.speed = 7; // 最大速度
+                this.STAR.speed = 10; // 最大速度
             }
+        }
+        if (preSpeed != this.STAR.speed) {
+            this.music.setBGMplayBackRate(1 + (this.STAR.speed - 4) / 6);
         }
     }
 
@@ -438,13 +462,27 @@ export default class Main {
 
         for (const obstacle of this.obstacles) {
             if (this.isColliding(this.STAR, obstacle)) {
-                wx.vibrateShort({ type: "light" });
-                this.gameStatus = 2;
-            }
-            if (this.gameStatus == 2) {
-                this.showGameOverScreen();
-                console.log("Collision detected!");
-                return;
+                const preHighScore =
+                    parseInt(localStorage.getItem("highScore")) || 0;
+                const highScore = Math.max(this.score, preHighScore);
+                const rewardHasShown =
+                    parseInt(localStorage.getItem("rewardHasShown")) || 0; //类型可能不对
+
+                localStorage.setItem("highScore", highScore);
+                this.touchEnabled = false; // 防止触发touchend事件，直接手都没抬起来就点了按钮
+
+                // if (1) {
+                if (!rewardHasShown && preHighScore < REWARD_SCORE && this.score >= REWARD_SCORE) {
+                    this.music.playRewardSound();
+                    vibrateWithInterval(4, 225, true);
+                    this.gameStatus = 3;
+                    this.showRewardScreen();
+                } else {
+                    this.music.playCollisionSound();
+                    wx.vibrateShort({ type: "light" });
+                    this.gameStatus = 2;
+                    this.showGameOverScreen();
+                }
             }
         }
 
@@ -453,17 +491,26 @@ export default class Main {
     }
 
     startGame() {
+        this.resetParameters();
+
         this.gameStatus = 1;
         this.gameStartTime = Date.now();
+        this.music.playBGM("pinkMemory");
 
-        this.STAR.x = canvas.width / 2 - this.STAR.width / 2;
-        this.STAR.y = canvas.height / 2 - this.STAR.height / 2;
-
-        this.score = 0;
-        this.STAR.speed = 3;
-        this.obstacles = [];
-
-        this.STAR.draw();
         this.gameLoop();
     }
 }
+function vibrateWithInterval(times, interval, startWithInterval = false) {
+    if (startWithInterval) {
+        setTimeout(() => {
+            vibrateWithInterval(times, interval)
+        }, interval);
+        return;
+    }
+    if (times > 0) {
+      wx.vibrateShort({ type: "light" });
+      setTimeout(() => {
+        vibrateWithInterval(times - 1, interval);
+      }, interval);
+    }
+  }
