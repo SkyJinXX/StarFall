@@ -31,6 +31,8 @@ export default class Music {
     }
     playBGM(bgmName, delay = 0){
         if (this.currentBGM) {
+            if (this.currentBGM == this.bgmList[bgmName]) return; //防止重复stop
+
             this.currentBGM.playbackRate = 1; 
             // seek(0)
             this.currentBGM.stop();// 可能设置了速度之后就得暂停或者stop一下，不然下次播放会有问题？

@@ -1,6 +1,7 @@
 import Music from "./music";
 const ctx = canvas.getContext("2d");
 const REWARD_SCORE = 1500;
+const BG_MAXALPHA = 0.5;
 class Obstacle {
     constructor(x, y, width, height, image, rotation) {
         this.x = x;
@@ -83,17 +84,22 @@ export default class Main {
         this.animationCycle = 0;
         this.score = 0;
         this.gameStatus = 0; // 0:haven't started， 1: gaming， 2: dead, 3: reward
-        this.gameStartTime = null;
+        this.startTime = Date.now();
         this.initialTouchX = null;
         this.STAR = new Star(canvas.width / 2, canvas.height / 2, 30, 30, 4);
         this.obstacles = [];
         this.touchEnabled = true;
+
+        this.backgroundStars = this.createBackgroundStars(25);
     }
     constructor() {
         this.canvas = canvas;
         this.ctx = ctx;
 
         this.resetParameters();
+
+        this.lastFrameTime = Date.now(); //帧数计算算是全局的，不用被重置
+        this.frameInterval = 0;
 
         // Obstacle's images
         this.images = {
@@ -139,9 +145,22 @@ export default class Main {
             this.handleTouchEnd(event)
         );
 
-        this.showMainMenu();
+        this.gameLoop();
     }
 
+    createBackgroundStars(numStars) {
+        const stars = [];
+        for (let i = 0; i < numStars; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                radius: Math.random() * 1 + 1,
+                alpha: Math.random() * BG_MAXALPHA,
+                alphaSpeed: Math.random() * 0.005,
+            });
+        }
+        return stars;
+    }
     createObstacle() {
         const meteorImages = [
             // { image: this.images.meteor36x74, width: 36, height: 74 },
@@ -183,9 +202,39 @@ export default class Main {
             obstacle.y -= this.STAR.speed;
         }
     }
-    drawObstacles() {
-        for (const obstacle of this.obstacles) {
-            obstacle.draw(ctx);
+    updateSpeed() {
+        const preSpeed = this.STAR.speed;
+        if (this.gameStatus == 1) {
+            const score = Math.floor(this.score);
+            if (score < 300) {
+                this.STAR.speed = 4;
+            } else if (score < 500) {
+                this.STAR.speed = 5;
+            } else if (score < 1000) {
+                this.STAR.speed = 7;
+            } else if (score < 1500) {
+                this.STAR.speed = 8;
+            } else if (score < 2000) {
+                this.STAR.speed = 10;
+            } else {
+                this.STAR.speed = 10; // 最大速度
+            }
+        }
+        if (preSpeed != this.STAR.speed) {
+            this.music.setBGMplayBackRate(1 + (this.STAR.speed - 4) / 8);
+        }
+    }
+    updateBackgroundStars() {
+        for (const star of this.backgroundStars) {
+            star.alpha += star.alphaSpeed;
+
+            if (star.alpha >= BG_MAXALPHA) {
+                star.alpha = BG_MAXALPHA;
+                star.alphaSpeed = -Math.abs(star.alphaSpeed);
+            } else if (star.alpha <= 0) {
+                star.alpha = 0;
+                star.alphaSpeed = Math.abs(star.alphaSpeed);
+            }
         }
     }
     updateObstacles() {
@@ -199,6 +248,12 @@ export default class Main {
 
         if (this.obstacles.length > 15) {
             this.obstacles.shift();
+        }
+    }
+
+    drawObstacles() {
+        for (const obstacle of this.obstacles) {
+            obstacle.draw(ctx);
         }
     }
     drawRestartButton() {
@@ -250,32 +305,47 @@ export default class Main {
             30
         );
     }
+    drawBackground() {
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        for (const star of this.backgroundStars) {
+            ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
+            ctx.beginPath();
+            ctx.arc(star.x, star.y, star.radius, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+    }
 
     showMainMenu() {
         // 先放音乐
         this.music.playBGM("redRiverValley");
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
         this.drawTitle();
         this.drawStartButton();
     }
     showRewardScreen() {
+        const elapsedTime = Date.now() - this.startTime;
+        console.log(Date.now(), this.startTime)
         const highScore = parseInt(localStorage.getItem("highScore")) || 0;
         ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         localStorage.setItem("rewardHasShown", 1);
 
-        
-        setTimeout(() => {
+        if (elapsedTime >= 1500) {
+            // 1500ms 假设每帧16.67ms
             ctx.font = "64px Arial";
             ctx.fillStyle = "pink";
             ctx.textAlign = "center";
             ctx.fillText("生日快乐", canvas.width / 2, canvas.height / 2 - 40);
-            
-        }, 1500);
+        }
         this.music.playBGM("happyBirthday", 1750);
-        setTimeout(() => {
+        // if (elapsedTime  == 105) {
+        //     this.music.playBGM("happyBirthday");
+        // }
+        if (elapsedTime  >= 3000) {
+            // 3000ms
             ctx.font = "12px Arial";
             ctx.fillStyle = "yellow";
             ctx.fillText(
@@ -283,7 +353,23 @@ export default class Main {
                 canvas.width / 2,
                 canvas.height / 2 + 150
             );
-        }, 3000);
+        }
+        // setTimeout(() => {
+        //     ctx.font = "64px Arial";
+        //     ctx.fillStyle = "pink";
+        //     ctx.textAlign = "center";
+        //     ctx.fillText("生日快乐", canvas.width / 2, canvas.height / 2 - 40);
+        // }, 1500);
+        // this.music.playBGM("happyBirthday", 1750);
+        // setTimeout(() => {
+        //     ctx.font = "12px Arial";
+        //     ctx.fillStyle = "yellow";
+        //     ctx.fillText(
+        //         "（凭本页截图可兑换5张甜甜券）",
+        //         canvas.width / 2,
+        //         canvas.height / 2 + 150
+        //     );
+        // }, 3000);
 
         ctx.font = "28px Arial";
         ctx.textAlign = "center";
@@ -419,72 +505,71 @@ export default class Main {
         }
     }
 
-    updateSpeed() {
-        const preSpeed = this.STAR.speed;
-        if (this.gameStartTime !== null) {
-            const score = Math.floor(this.score);
-            if (score < 300) {
-                this.STAR.speed = 4;
-            } else if (score < 500) {
-                this.STAR.speed = 5;
-            } else if (score < 1000) {
-                this.STAR.speed = 7;
-            } else if (score < 1500) {
-                this.STAR.speed = 8;
-            } else if (score < 2000) {
-                this.STAR.speed = 10;
-            } else {
-                this.STAR.speed = 10; // 最大速度
-            }
-        }
-        if (preSpeed != this.STAR.speed) {
-            this.music.setBGMplayBackRate(1 + (this.STAR.speed - 4) / 6);
-        }
-    }
-
     gameLoop() {
-        if (this.gameStatus !== 1) {
-            return;
-        }
-
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         // this.animationCycle = (this.animationCycle + 1) % 2;
+        this.updateBackgroundStars();
+        this.drawBackground();
 
-        this.updateStar();
-        this.STAR.draw();
+        switch (this.gameStatus) {
+            case 0:
+                this.showMainMenu();
+                break;
+            case 1:
+                this.updateStar();
+                this.STAR.draw();
 
-        this.updateObstacles();
-        this.drawObstacles();
+                this.updateObstacles();
+                this.drawObstacles();
 
-        this.score += this.STAR.speed / 10;
-        this.updateSpeed();
-        this.drawScore();
+                this.score += this.STAR.speed / 10;
+                this.updateSpeed();
+                this.drawScore();
 
-        for (const obstacle of this.obstacles) {
-            if (this.isColliding(this.STAR, obstacle)) {
-                const preHighScore =
-                    parseInt(localStorage.getItem("highScore")) || 0;
-                const highScore = Math.max(this.score, preHighScore);
-                const rewardHasShown =
-                    parseInt(localStorage.getItem("rewardHasShown")) || 0; //类型可能不对
+                for (const obstacle of this.obstacles) {
+                    if (this.isColliding(this.STAR, obstacle)) {
+                        const preHighScore =
+                            parseInt(localStorage.getItem("highScore")) || 0;
+                        const highScore = Math.max(this.score, preHighScore);
+                        const rewardHasShown =
+                            parseInt(localStorage.getItem("rewardHasShown")) ||
+                            0; //类型可能不对
 
-                localStorage.setItem("highScore", highScore);
-                this.touchEnabled = false; // 防止触发touchend事件，直接手都没抬起来就点了按钮
+                        this.startTime  = Date.now(); // 只重置这个，不能调用resetParameters，会把分数也清零
+                        localStorage.setItem("highScore", highScore);
+                        this.touchEnabled = false; // 防止触发touchend事件，直接手都没抬起来就点了按钮
 
-                // if (1) {
-                if (!rewardHasShown && preHighScore < REWARD_SCORE && this.score >= REWARD_SCORE) {
-                    this.music.playRewardSound();
-                    vibrateWithInterval(4, 225, true);
-                    this.gameStatus = 3;
-                    this.showRewardScreen();
-                } else {
-                    this.music.playCollisionSound();
-                    wx.vibrateShort({ type: "light" });
-                    this.gameStatus = 2;
-                    this.showGameOverScreen();
+                        // if (1) {
+                            if (
+                                !rewardHasShown &&
+                                preHighScore < REWARD_SCORE &&
+                                this.score >= REWARD_SCORE
+                            ) {
+                            this.music.playRewardSound();
+                            vibrateWithInterval(4, 225, true);
+                            this.gameStatus = 3;
+                        } else {
+                            this.music.playCollisionSound();
+                            wx.vibrateShort({ type: "light" });
+                            this.gameStatus = 2;
+                        }
+                    }
                 }
-            }
+                break;
+            case 2:
+                this.showGameOverScreen();
+                break;
+            case 3:
+                this.showRewardScreen();
+                break;
         }
+
+        // 帧数相关计算
+        const currentTime = Date.now();
+        this.frameInterval = currentTime - this.lastFrameTime;
+        this.lastFrameTime = currentTime;
+        const actualFPS = 1000 / this.frameInterval;
+        // console.log(actualFPS)
 
         this.bindGameLoop = this.gameLoop.bind(this);
         window.requestAnimationFrame(this.bindGameLoop, canvas);
@@ -494,23 +579,21 @@ export default class Main {
         this.resetParameters();
 
         this.gameStatus = 1;
-        this.gameStartTime = Date.now();
         this.music.playBGM("pinkMemory");
-
-        this.gameLoop();
+        // this.gameLoop();
     }
 }
 function vibrateWithInterval(times, interval, startWithInterval = false) {
     if (startWithInterval) {
         setTimeout(() => {
-            vibrateWithInterval(times, interval)
+            vibrateWithInterval(times, interval);
         }, interval);
         return;
     }
     if (times > 0) {
-      wx.vibrateShort({ type: "light" });
-      setTimeout(() => {
-        vibrateWithInterval(times - 1, interval);
-      }, interval);
+        wx.vibrateShort({ type: "light" });
+        setTimeout(() => {
+            vibrateWithInterval(times - 1, interval);
+        }, interval);
     }
-  }
+}
