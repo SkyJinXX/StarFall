@@ -276,7 +276,7 @@ export default class Main {
         ctx.font = "48px Arial";
         ctx.fillStyle = "white";
         ctx.textAlign = "center";
-        ctx.fillText("星星坠落", canvas.width / 2, canvas.height / 2 - 80); // 添加这个函数，绘制标题
+        ctx.fillText("星星下凡", canvas.width / 2, canvas.height / 2 - 80); // 添加这个函数，绘制标题
     }
     drawStartButton() {
         const { buttonWidth, buttonHeight, buttonX, buttonY } =
@@ -341,9 +341,6 @@ export default class Main {
             ctx.fillText("生日快乐", canvas.width / 2, canvas.height / 2 - 40);
         }
         this.music.playBGM("happyBirthday", 1750);
-        // if (elapsedTime  == 105) {
-        //     this.music.playBGM("happyBirthday");
-        // }
         if (elapsedTime >= 3000) {
             // 3000ms
             ctx.font = "12px Arial";
@@ -354,28 +351,12 @@ export default class Main {
                 canvas.height / 2 + 150
             );
         }
-        // setTimeout(() => {
-        //     ctx.font = "64px Arial";
-        //     ctx.fillStyle = "pink";
-        //     ctx.textAlign = "center";
-        //     ctx.fillText("生日快乐", canvas.width / 2, canvas.height / 2 - 40);
-        // }, 1500);
-        // this.music.playBGM("happyBirthday", 1750);
-        // setTimeout(() => {
-        //     ctx.font = "12px Arial";
-        //     ctx.fillStyle = "yellow";
-        //     ctx.fillText(
-        //         "（凭本页截图可兑换5张甜甜券）",
-        //         canvas.width / 2,
-        //         canvas.height / 2 + 150
-        //     );
-        // }, 3000);
 
         ctx.font = "28px Arial";
         ctx.textAlign = "center";
         ctx.fillStyle = "white";
         ctx.fillText(
-            "本次坠落: " + Math.floor(this.score) + "m",
+            "本次下落: " + Math.floor(this.score) + "m",
             canvas.width / 2,
             canvas.height / 2 + 10
         );
@@ -383,7 +364,7 @@ export default class Main {
         ctx.font = "20px Arial";
         ctx.fillStyle = "white";
         ctx.fillText(
-            "最多坠落: " + Math.floor(highScore) + "m",
+            "最多下落: " + Math.floor(highScore) + "m",
             canvas.width / 2,
             canvas.height / 2 + 50
         );
@@ -406,7 +387,7 @@ export default class Main {
         ctx.textAlign = "center";
         ctx.fillStyle = "white";
         ctx.fillText(
-            "本次坠落: " + Math.floor(this.score) + "m",
+            "本次下落: " + Math.floor(this.score) + "m",
             canvas.width / 2,
             canvas.height / 2 + 10
         );
@@ -414,7 +395,7 @@ export default class Main {
         ctx.font = "20px Arial";
         ctx.fillStyle = "white";
         ctx.fillText(
-            "最多坠落: " + Math.floor(highScore) + "m",
+            "最多下落: " + Math.floor(highScore) + "m",
             canvas.width / 2,
             canvas.height / 2 + 50
         );
