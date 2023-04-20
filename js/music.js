@@ -15,16 +15,7 @@ export default class Music {
         this.bgmList.redRiverValley.src = "audio/redRiverValley.mp3";
         this.bgmList.redRiverValley.loop = true;
         this.bgmList.redRiverValley.autoplay = true;
-        // this.bgmList.redRiverValley.onPause(()=> {
-        //     console.log('暂停了一次')
-        // })
-        // this.bgmList.redRiverValley.onStop(()=> {
-        //     console.log('stop了一次')
-        // })
-        // this.bgmList.redRiverValley.onTimeUpdate(() =>{
-        //     console.log("time up date", this.bgmList.redRiverValley.currentTime)
-        // })
-        // this.bgmList.pinkMemory = new Audio("audio/pinkMemory.mp3");
+
         this.bgmList.pinkMemory = wx.createInnerAudioContext();
         this.bgmList.pinkMemory.src = "audio/pinkMemory.mp3";
         this.bgmList.pinkMemory.loop = true;
@@ -47,12 +38,16 @@ export default class Music {
         //     this.currentPlayTime = this.currentBGM.currentTime; // 存的不是暂停时候的位置，好像暂停有延迟d
         //     console.log('onHide', this.currentBGM.currentTime)
         // })
-        wx.onShow(() =>{ 
+        wx.onShow(() => {
             if (this.currentBGM && this.currentBGM.paused) {
                 // this.currentBGM.seek(this.currentPlayTime)
                 this.currentBGM.play();
             }
-        })
+        });
+        // 避免被ios静音(不需要单独设置参数，因为那个是2.3.0版本以下的，我们用了playbackrate，就必须要2.11.0以上)
+        wx.setInnerAudioOption({
+            obeyMuteSwitch: false,
+        });
     }
     playCollisionSound() {
         this.collisionSound.play();
@@ -61,27 +56,52 @@ export default class Music {
         this.rewardSound.play();
     }
     playBGM(bgmName, delay = 0) {
-        if (bgmName) 
-        if (this.currentBGM) {
-            if (this.currentBGM == this.bgmList[bgmName]) return; //防止重复stop
+        if (bgmName)
+            if (this.currentBGM) {
+                if (this.currentBGM == this.bgmList[bgmName]) return; //防止重复stop
 
-            this.currentBGM.playbackRate = 1;
-            this.currentBGM.stop(); // 可能设置了速度之后就得暂停或者stop一下，不然下次播放会有问题？
-        }
+                this.currentBGM.playbackRate = 1;
+                this.currentBGM.stop(); // 可能设置了速度之后就得暂停或者stop一下，不然下次播放会有问题？
+                this.currentBGM.seek(0); // ios的兼容，不加不会从头开始
+            }
         this.currentBGM = this.bgmList[bgmName];
         setTimeout(() => {
             this.currentBGM.play();
         }, delay);
 
         this.currentBGM.onWaiting(() => {
-            console.log("wating!",this.currentBGM.currentTime);
-        })
+            console.log("wating!", this.currentBGM.currentTime);
+        });
     }
     setBGMplayBackRate(playBackRate) {
-        console.log(playBackRate);
-        this.currentBGM.playbackRate = playBackRate;
-        this.currentBGM.pause();
-        this.currentBGM.play();
+        // console.log(playBackRate);
+        wx.getSystemInfo({
+            success: (res) => {
+                let os = res.platform;
+                if (os.includes("ios")) {
+                    // console.log('ios下设置了倍速')
+                    // this.currentBGM.pause();
+                    // this.currentBGM.onPause(() =>{
+                    //     const src = this.currentBGM.src;
+                    //     this.currentBGM.src= 'audio/redRiverValley.mp3';
+                    //     this.currentBGM.src= src;
+
+                    //     this.currentBGM.playbackRate = playBackRate;
+
+                    //     this.currentBGM.play();
+                    // }) 
+
+                    
+                } else {
+                    this.currentBGM.playbackRate = playBackRate;
+                    this.currentBGM.pause();
+                    this.currentBGM.play();
+                }
+            },
+        });
+        // this.currentBGM.playbackRate = playBackRate;
+        // this.currentBGM.pause();
+        // this.currentBGM.play();
     }
 
     preloadAudio(audio) {
