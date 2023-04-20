@@ -86,7 +86,8 @@ export default class Main {
         this.gameStatus = 0; // 0:haven't started， 1: gaming， 2: dead, 3: reward
         this.startTime = Date.now();
         this.initialTouchX = null;
-        this.STAR = new Star(canvas.width / 2, canvas.height / 2, 30, 30, 4);
+        // this.STAR = new Star(canvas.width / 2, canvas.height / 2, 30, 30, 4);
+        this.STAR = new Star(canvas.width / 2, canvas.height / 10 * 5, 30, 30, 4);
         this.obstacles = [];
         this.touchEnabled = true;
 
@@ -261,7 +262,7 @@ export default class Main {
             this.restartButton;
 
         ctx.fillStyle = "#4CAF50";
-        ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
+        drawRoundedRect(ctx, buttonX, buttonY, buttonWidth, buttonHeight, 10);
 
         ctx.font = "24px Arial";
         ctx.fillStyle = "white";
@@ -272,18 +273,12 @@ export default class Main {
             buttonY + buttonHeight / 2 + 6
         );
     }
-    drawTitle() {
-        ctx.font = "48px Arial";
-        ctx.fillStyle = "white";
-        ctx.textAlign = "center";
-        ctx.fillText("星星下凡", canvas.width / 2, canvas.height / 2 - 80); // 添加这个函数，绘制标题
-    }
     drawStartButton() {
         const { buttonWidth, buttonHeight, buttonX, buttonY } =
             this.startButton;
 
         ctx.fillStyle = "#4CAF50";
-        ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
+        drawRoundedRect(ctx, buttonX, buttonY, buttonWidth, buttonHeight, 10);
 
         ctx.font = "24px Arial";
         ctx.fillStyle = "white";
@@ -293,6 +288,12 @@ export default class Main {
             canvas.width / 2,
             buttonY + buttonHeight / 2 + 8
         );
+    }
+    drawTitle() {
+        ctx.font = "48px Arial";
+        ctx.fillStyle = "#f7f736";
+        ctx.textAlign = "center";
+        ctx.fillText("星星下凡", canvas.width / 2, canvas.height / 2 - 80); // 添加这个函数，绘制标题
     }
     drawScore() {
         ctx.font = "20px Arial";
@@ -320,6 +321,7 @@ export default class Main {
     showMainMenu() {
         // 先放音乐
         this.music.playBGM("redRiverValley");
+        this.music.playBGM("redRiverValley", 1000); // 增加播放成功的概率？
 
         this.drawTitle();
         this.drawStartButton();
@@ -563,6 +565,21 @@ export default class Main {
         this.music.playBGM("pinkMemory");
         // this.gameLoop();
     }
+}
+
+function drawRoundedRect(ctx, x, y, width, height, radius) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.arc(x + width - radius, y + radius, radius, 1.5 * Math.PI, 2 * Math.PI);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.arc(x + width - radius, y + height - radius, radius, 0, 0.5 * Math.PI);
+    ctx.lineTo(x + radius, y + height);
+    ctx.arc(x + radius, y + height - radius, radius, 0.5 * Math.PI, Math.PI);
+    ctx.lineTo(x, y + radius);
+    ctx.arc(x + radius, y + radius, radius, Math.PI, 1.5 * Math.PI);
+    ctx.closePath();
+    ctx.fill();
 }
 function vibrateWithInterval(times, interval, startWithInterval = false) {
     if (startWithInterval) {
