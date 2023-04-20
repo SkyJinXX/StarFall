@@ -16,9 +16,21 @@ export default class Music {
         this.bgmList.redRiverValley.loop = true;
         this.bgmList.redRiverValley.autoplay = true;
 
-        this.bgmList.pinkMemory = wx.createInnerAudioContext();
-        this.bgmList.pinkMemory.src = "audio/pinkMemory.mp3";
-        this.bgmList.pinkMemory.loop = true;
+        this.bgmList.pinkMemory_original = wx.createInnerAudioContext();
+        this.bgmList.pinkMemory_original.src = "audio/pinkMemory_original.mp3";
+        this.bgmList.pinkMemory_original.loop = true;
+        this.bgmList.pinkMemory_repeatable_113 = wx.createInnerAudioContext();
+        this.bgmList.pinkMemory_repeatable_113.src = "audio/pinkMemory_repeatable_113.mp3";
+        this.bgmList.pinkMemory_repeatable_113.loop = true;
+        this.bgmList.pinkMemory_repeatable_136 = wx.createInnerAudioContext();
+        this.bgmList.pinkMemory_repeatable_136.src = "audio/pinkMemory_repeatable_136.mp3";
+        this.bgmList.pinkMemory_repeatable_136.loop = true;
+        this.bgmList.pinkMemory_repeatable_150 = wx.createInnerAudioContext();
+        this.bgmList.pinkMemory_repeatable_150.src = "audio/pinkMemory_repeatable_150.mp3";
+        this.bgmList.pinkMemory_repeatable_150.loop = true;
+        this.bgmList.pinkMemory_repeatable_175 = wx.createInnerAudioContext();
+        this.bgmList.pinkMemory_repeatable_175.src = "audio/pinkMemory_repeatable_175.mp3";
+        this.bgmList.pinkMemory_repeatable_175.loop = true;
 
         this.bgmList.happyBirthday = wx.createInnerAudioContext();
         this.bgmList.happyBirthday.src = "audio/happyBirthday.mp3";
@@ -29,7 +41,7 @@ export default class Music {
             this.preloadAudio(this.bgmList[bgmName]);
         }
 
-        this.currentBGM = null;
+        this.currentBGM = this.bgmList.redRiverValley;
         // this.currentPlayTime = null;
 
         // 确保切出小程序后回来能继续播放音乐
@@ -56,22 +68,26 @@ export default class Music {
         this.rewardSound.play();
     }
     playBGM(bgmName, delay = 0) {
-        if (bgmName)
-            if (this.currentBGM) {
-                if (this.currentBGM == this.bgmList[bgmName]) return; //防止重复stop
+        if (this.currentBGM) {
+            if (this.currentBGM == this.bgmList[bgmName]) {
+                this.currentBGM.play();
+                return;//防止重复stop
+            } 
 
-                this.currentBGM.playbackRate = 1;
-                this.currentBGM.stop(); // 可能设置了速度之后就得暂停或者stop一下，不然下次播放会有问题？
-                this.currentBGM.seek(0); // ios的兼容，不加不会从头开始
-            }
+            this.currentBGM.playbackRate = 1;
+            this.currentBGM.stop(); // 可能设置了速度之后就得暂停或者stop一下，不然下次播放会有问题？
+            this.currentBGM.seek(0); // ios的兼容，不加不会从头开始
+        }
         this.currentBGM = this.bgmList[bgmName];
         setTimeout(() => {
             this.currentBGM.play();
         }, delay);
 
-        this.currentBGM.onWaiting(() => {
-            console.log("wating!", this.currentBGM.currentTime);
-        });
+        return this.currentBGM;
+
+        // this.currentBGM.onWaiting(() => {
+        //     console.log("wating!", this.currentBGM.currentTime);
+        // });
     }
     setBGMplayBackRate(playBackRate) {
         // console.log(playBackRate);
@@ -86,10 +102,8 @@ export default class Music {
                     //     const src = this.currentBGM.src;
                     //     this.currentBGM.src= 'audio/redRiverValley.mp3';
                     //     this.currentBGM.src= src;
-
-
                     //     this.currentBGM.play();
-                    // }) 
+                    // })
                 } else {
                     this.currentBGM.playbackRate = playBackRate;
                     this.currentBGM.pause();

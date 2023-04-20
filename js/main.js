@@ -1,7 +1,15 @@
 import Music from "./music";
 const ctx = canvas.getContext("2d");
-const REWARD_SCORE = 1500;
+const REWARD_SCORE = 2023;
 const BG_MAXALPHA = 0.5;
+const speedList = [4, 5, 7, 8, 10];
+const musicList = [
+  "pinkMemory_original",
+  "pinkMemory_repeatable_113",
+  "pinkMemory_repeatable_136",
+  "pinkMemory_repeatable_150",
+  "pinkMemory_repeatable_175",
+];
 class Obstacle {
     constructor(x, y, width, height, image, rotation) {
         this.x = x;
@@ -90,6 +98,9 @@ export default class Main {
         this.STAR = new Star(canvas.width / 2, canvas.height / 10 * 5, 30, 30, 4);
         this.obstacles = [];
         this.touchEnabled = true;
+
+        this.currentSpeedIndex = 0;
+        this.currentMusicIndex = 0;
 
         this.backgroundStars = this.createBackgroundStars(25);
     }
@@ -206,24 +217,60 @@ export default class Main {
     updateSpeed() {
         const preSpeed = this.STAR.speed;
         const score = Math.floor(this.score);
+        const elapsedTime = Date.now() - this.startTime;
 
-        if (score < 300) {
+        // this.music.currentBGM.onEnded(() => {
+        //     this.music.currentBGM.offEnded();
+
+        //     switch(this.music.currentBGM) {
+        //         case this.music.bgmList[pinkMemory_original]:
+        //             break;
+        //         case this.music.bgmList[pinkMemory_repeatable_113]:
+        //             break;
+        //         case this.music.bgmList[pinkMemory_repeatable_136]:
+        //             break;
+        //         case this.music.bgmList[pinkMemory_repeatable_150]:
+        //             break;
+        //         case this.music.bgmList[pinkMemory_repeatable_175]:
+        //             break;
+        //     }
+        // })
+
+        if (elapsedTime < 19958) { // 可以改成播放完毕立即播放下一首，不过可能有延迟？
             this.STAR.speed = 4;
-        } else if (score < 500) {
+            this.music.playBGM('pinkMemory_original')
+        } else if (elapsedTime < 19958 + 13777) {
             this.STAR.speed = 5;
-        } else if (score < 1000) {
+            this.music.playBGM('pinkMemory_repeatable_113')
+        } else if (elapsedTime < 19958 + 13777 + 11447) {
             this.STAR.speed = 7;
-        } else if (score < 1500) {
+            this.music.playBGM('pinkMemory_repeatable_136')
+        } else if (elapsedTime < 19958 + 13777 + 11447 + 10310) {
             this.STAR.speed = 8;
-        } else if (score < 2000) {
+            this.music.playBGM('pinkMemory_repeatable_150')
+        } else if (elapsedTime < 19958 + 13777 + 11447 + 10310 + 8840) {
             this.STAR.speed = 10;
+            this.music.playBGM('pinkMemory_repeatable_175')
         } else {
             this.STAR.speed = 10; // 最大速度
+            this.music.playBGM('pinkMemory_repeatable_175')
         }
 
-        if (preSpeed != this.STAR.speed) {
-            this.music.setBGMplayBackRate(1 + (this.STAR.speed - 4) / 8);
-        }
+        // if (preSpeed != this.STAR.speed) {
+        //     if (score < 300) {
+        //     } else if (score < 500) {
+        //         this.STAR.speed = 5;
+        //     } else if (score < 1000) {
+        //         this.STAR.speed = 7;
+        //     } else if (score < 1500) {
+        //         this.STAR.speed = 8;
+        //     } else if (score < 2000) {
+        //         this.STAR.speed = 10;
+        //     } else {
+        //         this.STAR.speed = 10; // 最大速度
+        //     }
+        //     // this.music.setBGMplayBackRate(1 + (this.STAR.speed - 4) / 8);
+        // }
     }
     updateBackgroundStars() {
         for (const star of this.backgroundStars) {
@@ -290,7 +337,7 @@ export default class Main {
         );
     }
     drawTitle() {
-        ctx.font = "48px Arial";
+        ctx.font = "bold 48px Arial";
         ctx.fillStyle = "#f7f736";
         ctx.textAlign = "center";
         ctx.fillText("星星下凡", canvas.width / 2, canvas.height / 2 - 80); // 添加这个函数，绘制标题
@@ -328,7 +375,6 @@ export default class Main {
     }
     showRewardScreen() {
         const elapsedTime = Date.now() - this.startTime;
-        console.log(Date.now(), this.startTime);
         const highScore = parseInt(localStorage.getItem("highScore")) || 0;
         ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -562,9 +608,38 @@ export default class Main {
         this.resetParameters();
 
         this.gameStatus = 1;
-        this.music.playBGM("pinkMemory");
-        // this.gameLoop();
+        // this.playNextMusic();
+        this.music.playBGM("pinkMemory_original");
     }
+    // playNextMusic() {
+    //     // 设置速度
+    //     this.STAR.speed = speedList[this.currentSpeedIndex];
+    
+    //     // 播放音乐
+    //     const currentMusic = musicList[this.currentMusicIndex];
+    //     const musicInstance = this.music.playBGM(currentMusic);
+    //     console.log(currentMusic, this.currentMusicIndex, this.currentSpeedIndex)
+        
+    //     // 检查是否有音乐实例返回，确保我们可以添加事件监听器
+    //     if (musicInstance) {
+    //       // 当音乐播放完毕时
+    //       const onMusicEnded = () => {
+    //         console.log('音乐结束')
+    //         // 如果不是最后一个音乐和速度，将索引递增
+    //         if (this.currentMusicIndex < musicList.length - 1) {
+    //           this.currentMusicIndex++;
+    //           this.currentSpeedIndex++;
+    //         }
+    //         // 播放下一首音乐
+    //         this.playNextMusic();
+    
+    //         // 移除事件监听器
+    //         musicInstance.offEnded(onMusicEnded);
+    //       };
+          
+    //       musicInstance.onEnded(onMusicEnded); // 无语，onEnded也不被触发，什么垃圾wx
+    //     }
+    //   }
 }
 
 function drawRoundedRect(ctx, x, y, width, height, radius) {
