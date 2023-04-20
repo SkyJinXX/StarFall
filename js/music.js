@@ -80,18 +80,16 @@ export default class Music {
                 let os = res.platform;
                 if (os.includes("ios")) {
                     // console.log('ios下设置了倍速')
+                    // this.currentBGM.playbackRate = 2;
                     // this.currentBGM.pause();
                     // this.currentBGM.onPause(() =>{
                     //     const src = this.currentBGM.src;
                     //     this.currentBGM.src= 'audio/redRiverValley.mp3';
                     //     this.currentBGM.src= src;
 
-                    //     this.currentBGM.playbackRate = playBackRate;
 
                     //     this.currentBGM.play();
                     // }) 
-
-                    
                 } else {
                     this.currentBGM.playbackRate = playBackRate;
                     this.currentBGM.pause();
